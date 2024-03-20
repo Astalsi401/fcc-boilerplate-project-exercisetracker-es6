@@ -41,8 +41,8 @@ export const addUser = async (new_username) => {
 };
 export const getUsers = async () => {
   try {
-    const { username, _id } = await User.find({});
-    return { username, _id };
+    const data = await User.find({});
+    return data.map(({ username, _id }) => ({ username, _id }));
   } catch (err) {
     throw err;
   }
@@ -50,20 +50,19 @@ export const getUsers = async () => {
 export const addExercise = async (id_, description, duration, date) => {
   try {
     const { username, _id } = await User.findById(id_);
-    const data = await Exercise.create({
-      user_id: _id,
-      username,
-      description,
-      duration,
-      date: (dateFormat.test(date) ? new Date(date) : new Date()).toDateString(),
-    });
     const userLog = await Log.find({ user_id: _id });
-    if (userLog.length === 0) {
-      Log.create({ user_id: _id, username, count: 1, log: [{ description, duration, date: data.date }] });
-    } else {
-      await Log.findOneAndUpdate({ user_id: _id }, { count: userLog[0].count + 1, $push: { log: { description, duration, date: data.date } } });
-    }
-    return { username, description, duration, date: data.date };
+    date = (dateFormat.test(date) ? new Date(date) : new Date()).toDateString();
+    duration = Number(duration);
+    const data =
+      userLog.length === 0
+        ? Log.create({
+            user_id: _id,
+            username,
+            count: 1,
+            log: [{ description, duration, date: date }],
+          })
+        : await Log.findOneAndUpdate({ user_id: _id }, { count: userLog[0].count + 1, $push: { log: { description, duration, date } } }, { new: true });
+    return { _id, username, date, duration, description };
   } catch (err) {
     throw err;
   }
