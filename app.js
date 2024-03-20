@@ -53,15 +53,11 @@ export const addExercise = async (id_, description, duration, date) => {
     const userLog = await Log.find({ user_id: _id });
     date = (dateFormat.test(date) ? new Date(date) : new Date()).toDateString();
     duration = Number(duration);
-    const data =
-      userLog.length === 0
-        ? Log.create({
-            user_id: _id,
-            username,
-            count: 1,
-            log: [{ description, duration, date: date }],
-          })
-        : await Log.findOneAndUpdate({ user_id: _id }, { count: userLog[0].count + 1, $push: { log: { description, duration, date } } }, { new: true });
+    if (userLog.length === 0) {
+      await Log.create({ user_id: _id, username, count: 1, log: [{ description, duration, date: date }] });
+    } else {
+      await Log.findOneAndUpdate({ user_id: _id }, { count: userLog[0].count + 1, $push: { log: { description, duration, date } } });
+    }
     return { _id, username, date, duration, description };
   } catch (err) {
     throw err;
